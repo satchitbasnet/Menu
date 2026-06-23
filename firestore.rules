@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read for browse/explore data; writes require auth (adjust as needed).
+    match /chefs/{chefId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /cities/{cityId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CHEF
+  CLIENT
+}
+
+enum ServiceType {
+  PRIVATE_DINNER
+  MEAL_PREP
+  COOKING_CLASS
+}
+
+enum EventStatus {
+  PENDING_PROPOSAL
+  CLIENT_REVIEW
+  APPROVED
+  PAID
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  TIER_SELECTED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  createdAt    DateTime @default(now())
+
+  chef   Chef?
+  client Client?
+}
+
+model Chef {
+  id             String        @id @default(cuid())
+  userId         String?       @unique
+  name           String
+  bio            String?
+  email          String        @unique
+  profileImage   String?
+  activeServices ServiceType[] @default([PRIVATE_DINNER, MEAL_PREP, COOKING_CLASS])
+  createdAt      DateTime      @default(now())
+
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  events Event[]
+}
+
+model Client {
+  id     String  @id @default(cuid())
+  userId String? @unique
+  name   String
+  email  String
+  phone  String?
+
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  events Event[]
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  chefId      String
+  clientId    String
+  eventDate   DateTime
+  headcount   Int
+  serviceType ServiceType
+  status      EventStatus @default(PENDING_PROPOSAL)
+  intakeData  Json        @default("{}")
+  createdAt   DateTime    @default(now())
+
+  chef          Chef           @relation(fields: [chefId], references: [id], onDelete: Cascade)
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  menuProposals MenuProposal[]
+
+  @@index([chefId])
+  @@index([clientId])
+  @@index([eventDate])
+  @@index([serviceType])
+}
+
+model MenuProposal {
+  id        String         @id @default(cuid())
+  eventId   String
+  chefNotes String
+  status    ProposalStatus @default(DRAFT)
+  createdAt DateTime       @default(now())
+
+  event Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tiers ProposalTier[]
+
+  @@index([eventId])
+}
+
+model ProposalTier {
+  id             String  @id @default(cuid())
+  menuProposalId String
+  name           String
+  description    String
+  pricePerPerson Decimal @db.Decimal(10, 2)
+  totalCost      Decimal @db.Decimal(10, 2)
+  menuItems      Json    @default("[]")
+  imageUrl       String?
+  isSelected     Boolean @default(false)
+
+  menuProposal MenuProposal @relation(fields: [menuProposalId], references: [id], onDelete: Cascade)
+
+  @@index([menuProposalId])
+}
