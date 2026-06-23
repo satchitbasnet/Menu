@@ -1,7 +1,6 @@
 export type GoogleMapsConfigIssue =
   | "missing"
   | "invalid_key"
-  | "demo_key"
   | null;
 
 export type GoogleMapsConfig = {
@@ -10,11 +9,6 @@ export type GoogleMapsConfig = {
   enabled: boolean;
   issue: GoogleMapsConfigIssue;
 };
-
-/** Public sample keys from Google documentation — blocked on non-Google sites. */
-const BLOCKED_API_KEYS = new Set([
-  "AIzaSyBg8U3aeSQiubXPGD2tNy2NgyyU_qO1FQk",
-]);
 
 const BLOCKED_MAP_IDS = new Set(["DEMO_MAP_ID"]);
 
@@ -32,10 +26,6 @@ export function getGoogleMapsConfig(): GoogleMapsConfig {
     return { apiKey, mapId, enabled: false, issue: "missing" };
   }
 
-  if (BLOCKED_API_KEYS.has(apiKey)) {
-    return { apiKey, mapId, enabled: false, issue: "demo_key" };
-  }
-
   if (!isValidGoogleMapsApiKey(apiKey)) {
     return { apiKey, mapId, enabled: false, issue: "invalid_key" };
   }
@@ -48,10 +38,6 @@ export function getGoogleMapsConfig(): GoogleMapsConfig {
 }
 
 export function googleMapsSetupMessage(issue: GoogleMapsConfigIssue): string {
-  if (issue === "demo_key") {
-    return "That API key is Google's public documentation sample — it won't work on localhost. Create your own key in Google Cloud Console → Credentials, paste it into .env, save, and restart npm run dev.";
-  }
-
   if (issue === "invalid_key") {
     return "Your NEXT_PUBLIC_GOOGLE_MAPS_API_KEY must start with AIzaSy (from Google Cloud Console → Credentials). Save .env, then restart with npm run dev.";
   }
